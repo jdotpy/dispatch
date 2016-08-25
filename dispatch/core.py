@@ -36,7 +36,7 @@ class Reactor():
             # Sleep until next action
             if earliest_action:
                 sleep_seconds = (earliest_action - self.now()).total_seconds()
-                if sleep_seconds:
+                if sleep_seconds > 0:
                     time.sleep(sleep_seconds)
         self.running = False
 
