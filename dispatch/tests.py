@@ -20,3 +20,4 @@ class Functional(unittest.TestCase):
             r.background_action(example_work)
         )
         r.run()
+        time.sleep(100)

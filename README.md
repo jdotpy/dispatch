@@ -5,26 +5,23 @@ Python package for timed dispatching of events or work
 	import time
 	from dispatch import Reactor
 
-	reactor = Reactor()
-	def hi():
-		print('hi')
-
+	# Some example functions
 	def work():
 		time.sleep(2)
 		print('work done!')
 	
 	# To Print "hi" every 2 seconds
-	# r.action does actions within the main thread
 	r = Reactor()
 	r.dispatch(
 		r.schedule_interval(seconds=2), 
-		r.action(hi)
+		r.action(print, 'hello') # this will be done in main thread and will interfere with main loop
 	)
+	r.run()
 
 	# To trigger a 2-second work function every second
-	# r.background_action spawns a thread for each action
 	r = Reactor()
 	r.dispatch(
 		r.schedule_interval(seconds=1), 
-		r.backgound_action(work) 
+		r.backgound_action(work)  # this will be done in a separate thread and wont interfere with main loop
 	)
+	r.run()

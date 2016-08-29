@@ -1,7 +1,7 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 import threading
 
-from .schedules import one_time_schedule, interval_schedule
+from .schedules import one_time_schedule, interval_schedule, CalendarSchedule
 import time
 
 class Reactor(): 
@@ -40,6 +40,13 @@ class Reactor():
                     time.sleep(sleep_seconds)
         self.running = False
 
+    def _debug(self, runs=5):
+        for plan in self.plans:
+            print('------------- Plan {} ---------------'.format(str(plan)))
+            for i in range(runs):
+                print('Next Run @ {}'.format(str(plan.next_run)))
+                plan.get_next_run()
+
     def now(self):
         return datetime.now()
 
@@ -59,11 +66,31 @@ class Reactor():
 
     # Schedule helpers
     schedule_one_time = one_time_schedule
+    schedule_calendar = CalendarSchedule
 
     def schedule_interval(self, **kwargs):
         if 'start' not in kwargs:
             kwargs['start'] = self.now()
         return interval_schedule(**kwargs)
+
+    def schedule_calendar(self, **kwargs):
+        if 'start' not in kwargs:
+            kwargs['start'] = self.now()
+        return CalendarSchedule(**kwargs)
+
+    def schedule_daily(self, hour=0, minute=0, second=0):
+        now = self.now()
+        start = now.replace(hour=hour, minute=minute, second=second)
+        if start < now:
+            start = start + timedelta(days=1)
+        return interval_schedule(start=start, days=1)
+
+    def schedule_hourly(self, minute=0, second=0):
+        now = self.now()
+        start = now.replace(minute=minute, second=second)
+        if start < now:
+            start = start + timedelta(hours=1)
+        return interval_schedule(start=start, hours=1)
 
 class Plan():
     """ A Plan encapsulates the schedule and what is being scheduled. """
@@ -84,7 +111,6 @@ class Plan():
         self.last_run = cycle_time
         self.action.run()
         self.get_next_run()
-
 
 class FunctionCallAction():
     def __init__(self, func, args, kwargs, threaded=False):
