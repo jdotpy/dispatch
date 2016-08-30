@@ -159,13 +159,15 @@ class CalendarSchedule():
                 next_minute = self._next_choice(moment.minute, self.minutes)
                 if next_minute is None:
                     moment = moment + timedelta(hours=1)
+                    moment = moment.replace(minute=0, second=0)
                     continue
                 moment = moment.replace(minute=next_minute, second=0)
 
-            if not (self.minutes == self.ALL or moment.second in self.seconds):
+            if not (self.seconds == self.ALL or moment.second in self.seconds):
                 next_second = self._next_choice(moment.second, self.seconds)
                 if next_second is None:
                     moment = moment + timedelta(minutes=1)
+                    moment = moment.replace(second=0)
                     continue
                 moment = moment.replace(second=next_second)
             return moment
