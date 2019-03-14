@@ -13,7 +13,7 @@ class Reactor():
 
     def run(self):
         self.running = True
-        while self.plans:
+        while self.running and self.plans:
             now = self.now()
             to_remove = []
             earliest_action = None
@@ -25,8 +25,9 @@ class Reactor():
                 # Execute if we've passed the next run time
                 elif now >= plan.next_run:
                     plan.run(now)
+
                 # Keep running tab of when the next time i'll have to do something is 
-                if earliest_action is None or earliest_action < plan.next_run:
+                if earliest_action is None or plan.next_run < earliest_action:
                     earliest_action = plan.next_run
 
             # Remove plans that are complete
@@ -46,6 +47,9 @@ class Reactor():
             for i in range(runs):
                 print('Next Run @ {}'.format(str(plan.next_run)))
                 plan.get_next_run()
+
+    def stop(self):
+        self.running = False
 
     def now(self):
         return datetime.now()
@@ -94,12 +98,20 @@ class Reactor():
 
 class Plan():
     """ A Plan encapsulates the schedule and what is being scheduled. """
-    def __init__(self, schedule, action):
+    def __init__(self, schedule, action, name=None, allow_multiple=False):
+        self.name = name
         self.schedule = schedule
         self.action = action
         self.last_run = None
         self.next_run = None
         self.get_next_run()
+        self.allow_multiple = allow_multiple
+
+    def __str__(self):
+        if self.name:
+            return self.name
+        else:
+            return str(action)
 
     def get_next_run(self):
         try:
@@ -108,9 +120,19 @@ class Plan():
             self.next_run = None
 
     def run(self, cycle_time):
-        self.last_run = cycle_time
-        self.action.run()
-        self.get_next_run()
+        if hasattr(self.action, 'is_running'):
+            is_running = self.action.is_running()
+        else:
+            is_running = False
+
+        if is_running and not self.allow_multiple:
+            print('Skipping plan {} as another instance is still running'.format(self))
+            self.get_next_run()
+        else:
+            self.last_run = cycle_time
+            self.action.run()
+            self.get_next_run()
+
 
 class FunctionCallAction():
     def __init__(self, func, args, kwargs, threaded=False):
@@ -118,10 +140,17 @@ class FunctionCallAction():
         self.args = args
         self.kwargs = kwargs
         self.threaded = threaded
+        self.last_thread = None
 
     def run(self):
         if self.threaded:
             thread = threading.Thread(target=self.func, args=self.args, kwargs=self.kwargs)
             thread.start()
+            self.last_thread = thread
         else:
             self.func(*self.args, **self.kwargs)
+
+    def is_running(self):
+        if not self.last_thread:
+            return False
+        return self.last_thread.is_alive()
