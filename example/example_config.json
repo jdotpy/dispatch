@@ -1,0 +1,12 @@
+{
+    "task1": {
+        "action": "example.my_task",
+        "schedule_type": "interval",
+        "schedule": {"seconds": 2}
+    },
+    "task2": {
+        "action": "example.my_task",
+        "schedule_type": "interval",
+        "schedule": {"hours": 2}
+    }
+}

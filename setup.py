@@ -4,7 +4,7 @@ with open("README.md", "r") as f:
     long_description = f.read()
 
 setup(
-    name = 'dispatch',
+    name = 'dispatch_reactor',
     packages=['dispatch'],
     version = '1.0.0',
     description = 'Module for dispatching jobs and timed operations',
