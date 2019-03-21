@@ -5,9 +5,7 @@ import time
 
 def my_task():
     i = random.randint(1,10000)
-    print('Starting task', i)
     time.sleep(10)
-    print('Ending task', i)
 
 
 def main():

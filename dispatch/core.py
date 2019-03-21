@@ -1,8 +1,11 @@
 from datetime import datetime, timedelta
 import threading
+import logging
+import time
 
 from .schedules import one_time_schedule, interval_schedule, CalendarSchedule
-import time
+
+logger = logging.getLogger(__name__)
 
 class Reactor(): 
     """ The reactor holds the main loop and constructs the plans """
@@ -12,9 +15,14 @@ class Reactor():
         self.plans = []
 
     def run(self):
+        logger.info('Starting reactor')
         self.running = True
         while self.running and self.plans:
             now = self.now()
+            logger.debug('[Reactor] awoke at {}; Checking {} plans'.format(
+                now,
+                len(self.plans),
+            ))
             to_remove = []
             earliest_action = None
             for plan in self.plans:
@@ -24,6 +32,10 @@ class Reactor():
                     continue
                 # Execute if we've passed the next run time
                 elif now >= plan.next_run:
+                    logger.debug('[Reactor] starting plan {} as it was scheduled to run at {}'.format(
+                        plan,
+                        plan.next_run
+                    ))
                     plan.run(now)
 
                 # Keep running tab of when the next time i'll have to do something is 
@@ -32,12 +44,15 @@ class Reactor():
 
             # Remove plans that are complete
             for plan in to_remove:
+                logger.info('[Reactor] removing plan {} as it is complete'.format(plan))
                 self.plans.remove(plan)
 
             # Sleep until next action
             if earliest_action:
+                logger.debug('[Reactor] next scheduled plan is {}'.format(earliest_action))
                 sleep_seconds = (earliest_action - self.now()).total_seconds()
                 if sleep_seconds > 0:
+                    logger.debug('[Reactor] sleeping for {} seconds till next job'.format(sleep_seconds))
                     time.sleep(sleep_seconds)
         self.running = False
 
@@ -119,20 +134,33 @@ class Plan():
         except StopIteration:
             self.next_run = None
 
+    def get_run_id(self):
+        if hasattr(self.action, 'run_id'):
+            return self.action.run_id()
+        return ''
+
     def run(self, cycle_time):
+        logger.debug('[Plan={}] attempting to run at {}'.format(self, cycle_time))
         if hasattr(self.action, 'is_running'):
             is_running = self.action.is_running()
         else:
             is_running = False
 
         if is_running and not self.allow_multiple:
-            print('Skipping plan {} as another instance is still running'.format(self))
             self.get_next_run()
-        else:
-            self.last_run = cycle_time
-            self.action.run()
-            self.get_next_run()
+            run_id = self.get_run_id()
+            logger.warn('[Plan={}] Skipping as another instance ({}) is still running. Rescheduling for {}.'.format(
+                self,
+                run_id,
+                self.next_run,
+            ))
+            return False
 
+        # Actually run
+        logger.debug('[Plan={}] starting'.format(self))
+        self.last_run = cycle_time
+        self.action.run()
+        self.get_next_run()
 
 class FunctionCallAction():
     def __init__(self, func, args, kwargs, threaded=False):
@@ -142,13 +170,27 @@ class FunctionCallAction():
         self.threaded = threaded
         self.last_thread = None
 
+    def __str__(self):
+        return 'function:' + self.func.__name__
+
+    def run_id(self):
+        return self.last_thread.ident
+
+    def _func_wrapper(self):
+        logger.debug('[Action={}] started'.format(self))
+        try:
+            self.func(*self.args, **self.kwargs)
+        except Exception as e:
+            logger.error('[Action={}] failed with exception'.format(self), exc_info=True)
+        logger.debug('[Action={}] complete'.format(self))
+
     def run(self):
         if self.threaded:
-            thread = threading.Thread(target=self.func, args=self.args, kwargs=self.kwargs)
+            thread = threading.Thread(target=self._func_wrapper)
             thread.start()
             self.last_thread = thread
         else:
-            self.func(*self.args, **self.kwargs)
+            self._func_wrapper()
 
     def is_running(self):
         if not self.last_thread:
