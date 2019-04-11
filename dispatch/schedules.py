@@ -1,15 +1,21 @@
 from datetime import timedelta, datetime, time
+import random
 
 def one_time_schedule(timestamp):
     yield timestamp
 
-def interval_schedule(start=None, days=0, hours=0, minutes=0, seconds=0, miliseconds=0, till=None):
+def interval_schedule(start=None, days=0, hours=0, minutes=0, seconds=0, miliseconds=0, till=None, randomize_start=False):
     hours += days * 24
     minutes += hours * 60
     seconds += minutes * 60
     interval = seconds + (miliseconds / 1000)
     if start is None:
-        start = datetime.now()
+        # Support a randomized delay between 0 and the interval to prevent "thundering herd" issues
+        if randomize_start:
+            delay = random.random() * interval
+            start = datetime.now() + timedelta(seconds=delay)
+        else:
+            start = datetime.now()
     yield start
     current = start
     while True:

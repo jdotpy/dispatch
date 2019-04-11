@@ -88,8 +88,6 @@ class Reactor():
     schedule_calendar = CalendarSchedule
 
     def schedule_interval(self, **kwargs):
-        if 'start' not in kwargs:
-            kwargs['start'] = self.now()
         return interval_schedule(**kwargs)
 
     def schedule_calendar(self, **kwargs):

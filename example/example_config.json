@@ -2,9 +2,14 @@
     "task1": {
         "action": "example.my_task",
         "schedule_type": "interval",
-        "schedule": {"seconds": 2}
+        "schedule": {"seconds": 20, "randomize_start": true}
     },
     "task2": {
+        "action": "example.my_task",
+        "schedule_type": "interval",
+        "schedule": {"seconds": 20, "randomize_start": true}
+    },
+    "task3": {
         "action": "example.my_task",
         "schedule_type": "interval",
         "schedule": {"hours": 2}

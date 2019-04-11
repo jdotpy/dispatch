@@ -7,6 +7,9 @@ def my_task():
     i = random.randint(1,10000)
     time.sleep(10)
 
+def echo(text=None):
+    print('Echo:', text)
+    
 
 def main():
     r = Reactor()
