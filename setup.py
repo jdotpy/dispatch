@@ -7,7 +7,7 @@ setup(
     name = 'dispatch_reactor',
     scripts=['bin/dispatcher'],
     packages=['dispatch'],
-    version = '2.0.0',
+    version = '2.1.0',
     description = 'Module for dispatching jobs and timed operations',
     long_description=long_description,
     long_description_content_type="text/markdown",
