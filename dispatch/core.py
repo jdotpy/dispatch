@@ -124,7 +124,7 @@ class Plan():
         if self.name:
             return self.name
         else:
-            return str(action)
+            return str(self.action)
 
     def get_next_run(self):
         try:
